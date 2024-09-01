@@ -103,9 +103,15 @@ const loginUser =asyncHandler(async (req,res)=>{
 
     const {email, username, password} =req.body
 
-    if(!username || !email){
+    if(!username && !email){
         throw new ApiError(404, "username or email is required")
     }
+
+    // Here is an alternative of above code based on logic discussed in video:
+    // if (!(username || email)) {
+    //     throw new ApiError(400, "username or email is required")
+        
+    // }
 
     const user=await User.findOne({
         $or: [{username},{email}]
@@ -133,8 +139,8 @@ const loginUser =asyncHandler(async (req,res)=>{
     }
 
     return res.status(200)
-              .cookie("accessToken", accessToken)
-              .cookie("refreshToken", refreshToken)
+              .cookie("accessToken", accessToken, options)
+              .cookie("refreshToken", refreshToken, options)
               .json(
                 new ApiResponse(
                     200,
@@ -147,12 +153,12 @@ const loginUser =asyncHandler(async (req,res)=>{
 
 })
 
-const loggedOutUser= asyncHandler(async(req, res)=>{
+const logoutUser= asyncHandler(async(req, res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 // this removes the field from document
             }
         },
         {
@@ -166,8 +172,8 @@ const loggedOutUser= asyncHandler(async(req, res)=>{
     }
 
     return res.status(200)
-              .clearCookie("accessToken")
-              .clearCookie("refreshToken")
+              .clearCookie("accessToken", options)
+              .clearCookie("refreshToken", options)
               .json(new ApiResponse(200, {}, "User logged Out"))
 
 })
@@ -176,5 +182,5 @@ const loggedOutUser= asyncHandler(async(req, res)=>{
 export {
     registerUser,
     loginUser,
-    loggedOutUser
+    logoutUser
 }
